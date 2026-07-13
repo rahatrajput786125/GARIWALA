@@ -40,7 +40,7 @@ const values = [
 ]
 
 const timeline = [
-  { year: '2012', event: 'Founded as a small workshop in Lahore with 3 technicians.' },
+  { year: '2012', event: 'Founded as a small workshop in New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400 with 3 technicians.' },
   { year: '2015', event: 'Expanded to a full-service facility with 20+ staff members.' },
   { year: '2018', event: 'Launched custom builds division — first bespoke project delivered.' },
   { year: '2021', event: 'Awarded Best Automotive Service Provider in the region.' },

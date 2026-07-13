@@ -1,25 +1,51 @@
-import axios from 'axios'
+const BASE = 'http://localhost:5000/api'
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+const getToken = () => localStorage.getItem('token')
+
+const headers = (auth = false) => ({
+  'Content-Type': 'application/json',
+  ...(auth && { Authorization: `Bearer ${getToken()}` }),
 })
 
-api.interceptors.request.use(
-  (config) => config,
-  (error) => Promise.reject(error)
-)
+export const login = (email, password) =>
+  fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ email, password }),
+  }).then((r) => r.json())
 
-api.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
-    const message =
-      error.response?.data?.message || error.message || 'Something went wrong'
-    return Promise.reject(new Error(message))
-  }
-)
+export const getProducts = () =>
+  fetch(`${BASE}/products`, { headers: headers() }).then((r) => r.json())
 
-export default api
+export const getProductById = (id) =>
+  fetch(`${BASE}/products/${id}`, { headers: headers() }).then((r) => r.json())
+
+export const createProduct = (data) =>
+  fetch(`${BASE}/products`, {
+    method: 'POST',
+    headers: headers(true),
+    body: JSON.stringify(data),
+  }).then((r) => r.json())
+
+export const updateProduct = (id, data) =>
+  fetch(`${BASE}/products/${id}`, {
+    method: 'PUT',
+    headers: headers(true),
+    body: JSON.stringify(data),
+  }).then((r) => r.json())
+
+export const deleteProduct = (id) =>
+  fetch(`${BASE}/products/${id}`, {
+    method: 'DELETE',
+    headers: headers(true),
+  }).then((r) => r.json())
+
+export const uploadImage = (file) => {
+  const fd = new FormData()
+  fd.append('image', file)
+  return fetch(`${BASE}/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: fd,
+  }).then((r) => r.json())
+}

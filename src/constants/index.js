@@ -20,7 +20,7 @@ export const SOCIAL_LINKS = [
 ]
 
 export const CONTACT_INFO = {
-  phone: '+92 300 0000000',
+  phone: '+92 313 255 3864',
   email: 'info@gariwala.com',
-  address: 'Lahore, Pakistan',
+  address: 'New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400',
 }

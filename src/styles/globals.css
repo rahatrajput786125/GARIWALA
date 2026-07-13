@@ -117,8 +117,8 @@
     background: linear-gradient(90deg, transparent 0%, rgba(229,231,235,0.7) 25%, rgba(229,231,235,0.7) 75%, transparent 100%);
   }
 
-  /* top padding to clear fixed navbar on inner pages */
-  .nav-offset { @apply pt-24 lg:pt-28; }
+  /* top padding to clear fixed two-row navbar (top-bar ~40px + main-bar ~72px = ~112px) */
+  .nav-offset { @apply pt-[112px] lg:pt-[112px]; }
 
   /* ── Gradient text ── */
   .text-gradient {
@@ -429,6 +429,31 @@
 .swiper-button-prev::after {
   font-size: 10px !important;
   font-weight: 900 !important;
+}
+
+/* ── Custom Pagination Dots ── */
+.swiper-pagination-custom {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.swiper-pagination-custom .swiper-pagination-bullet {
+  width: 10px !important;
+  height: 10px !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  transition: all 0.4s ease !important;
+}
+
+.swiper-pagination-custom .swiper-pagination-bullet-active {
+  width: 32px !important;
+  background: #FFC107 !important;
+  border-color: #FFC107 !important;
+  border-radius: 4px !important;
 }
 
 /* ── High-DPI / Retina sharpness ── */

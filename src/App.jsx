@@ -9,6 +9,9 @@ import Projects from '@/pages/Projects'
 import Gallery from '@/pages/Gallery'
 import Contact from '@/pages/Contact'
 import NotFound from '@/pages/NotFound'
+import ProductDetail from '@/pages/ProductDetail'
+import Login from '@/pages/Login'
+import Admin from '@/pages/Admin'
 
 const App = () => {
   const location = useLocation()
@@ -24,6 +27,9 @@ const App = () => {
             <Route path="/projects" element={<Projects />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </PageTransition>

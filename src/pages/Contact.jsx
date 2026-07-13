@@ -9,7 +9,6 @@ import Heading from '@/components/Heading'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
 import { SITE_NAME, CONTACT_INFO } from '@/constants'
-import api from '@/utils/api'
 
 const contactDetails = [
   { icon: Phone, label: 'Phone', value: CONTACT_INFO.phone, color: 'text-amber-500', bg: 'bg-amber-50' },
@@ -32,7 +31,8 @@ const Contact = () => {
   const onSubmit = async (data) => {
     setServerError('')
     try {
-      await api.post('/contact', data)
+      // TODO: wire up contact API when ready
+      await new Promise((r) => setTimeout(r, 800))
       setSubmitted(true)
       reset()
     } catch (err) {
@@ -144,7 +144,7 @@ const Contact = () => {
                     <Input
                       label="Phone Number"
                       type="tel"
-                      placeholder="+92 300 0000000"
+                      placeholder="+92 313 255 3864"
                       error={errors.phone?.message}
                       {...register('phone')}
                     />

@@ -34,7 +34,7 @@ const projects = [
     title: 'Civic Type R — Full Ground-Up Build',
     description:
       'A complete ground-up custom build featuring bespoke bodywork, a high-output turbocharged engine, and a hand-stitched interior — delivered to exacting client specifications.',
-    location: 'Lahore, Pakistan',
+    location: 'New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400',
     year: '2024',
     tags: ['Custom Build', 'Performance', 'Interior'],
     highlights: ['Completed On Time', 'Premium Quality', 'Certified Standards'],
@@ -76,7 +76,7 @@ const projects = [
     title: 'Hilux Overland Expedition Build',
     description:
       'Full overland conversion with lift kit, roof tent, auxiliary power, and long-range fuel system.',
-    location: 'Lahore, Pakistan',
+    location: 'New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400',
     year: '2023',
     tags: ['Custom Build', 'Overland'],
     highlights: ['Completed On Time', 'Premium Quality'],
@@ -90,7 +90,7 @@ const projects = [
     title: 'Porsche 911 — Paint Correction',
     description:
       'Multi-stage paint correction and ceramic coating on a pristine Porsche 911 GT3 RS.',
-    location: 'Lahore, Pakistan',
+    location: 'New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400',
     year: '2023',
     tags: ['Paint', 'Detailing'],
     highlights: ['Premium Quality', 'Certified Standards'],

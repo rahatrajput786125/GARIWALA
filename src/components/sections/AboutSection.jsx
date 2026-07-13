@@ -224,7 +224,7 @@ const AboutSection = () => {
                   <p className="font-heading font-bold text-body-sm text-white/90 tracking-wide">
                     Premium Automotive Workshop
                   </p>
-                  <p className="text-body-xs text-white/50 mt-0.5">Lahore, Pakistan — Est. 2012</p>
+                  <p className="text-body-xs text-white/50 mt-0.5">New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400 — Est. 2012</p>
                 </div>
 
                 <div className="absolute inset-0 rounded-[2rem] ring-1 ring-inset ring-white/10 pointer-events-none" />
