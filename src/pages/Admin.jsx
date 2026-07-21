@@ -4,13 +4,26 @@ import { Helmet } from 'react-helmet-async'
 import { Plus, Pencil, Trash2, LogOut, Truck, X, Loader2, ChevronDown, ChevronUp, Image, Save, Upload } from 'lucide-react'
 import { getProducts, createProduct, updateProduct, deleteProduct, uploadImage } from '@/utils/api'
 import { SITE_NAME } from '@/constants'
+import BrandIcon from '@/components/BrandIcon'
+
+/* ── Slug generator ── */
+const toSlug = (str) =>
+  str.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
+/* ── All car types ── */
+const ALL_TYPES = [
+  'Sedan', 'SUV', 'Hatchback', 'Double Cabin', 'Single Cabin',
+  'Crossover', 'Coupe', 'Convertible', 'Minivan', 'MPV',
+  'Pickup Truck', 'Van', 'Wagon', 'Electric', 'Hybrid',
+  'Luxury Sedan', 'Sports Car', 'Off-Road', 'Compact SUV', 'Full-Size SUV',
+]
 
 /* ── Empty product template ── */
 const emptyProduct = () => ({
-  id: '', name: '', model: '', type: '', category: 'Cars',
+  id: '', name: '', model: '', type: '', category: 'Cars', // id is auto-generated
   inStock: true, image: '', overview: '',
   specs: ['', '', '', ''],
-  images: ['', '', '', '', '', ''],
+  images: [''],  // starts with 1, grows dynamically
   specGroups: [
     { label: 'Engine',       items: [{ label: '', value: '' }] },
     { label: 'Transmission', items: [{ label: '', value: '' }] },
@@ -33,6 +46,84 @@ const Field = ({ label, children }) => (
 )
 
 const inp = 'bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder:text-white/20 outline-none focus:border-[#F4B400] transition-colors w-full'
+
+/* ── Type Selector — single select, searchable, auto-close ── */
+const TypeSelector = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filtered = ALL_TYPES.filter((t) =>
+    t.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const select = (type) => {
+    onChange(type)
+    setOpen(false)
+    setSearch('')
+  }
+
+  return (
+    <Field label="Type">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className={`${inp} text-left flex items-center justify-between`}
+        >
+          <span className={value ? 'text-white' : 'text-white/20'}>
+            {value || 'Select a type...'}
+          </span>
+          <ChevronDown size={14} className="text-white/30 flex-shrink-0 ml-2" />
+        </button>
+
+        {open && (
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-white/20 rounded-xl overflow-hidden shadow-2xl">
+            <div className="p-2 border-b border-white/10">
+              <input
+                autoFocus
+                className={`${inp} text-sm`}
+                placeholder="Search type..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="max-h-52 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <p className="text-white/30 text-xs text-center py-4">No match</p>
+              ) : (
+                filtered.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => select(type)}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                      value === type
+                        ? 'bg-[#F4B400]/10 text-[#F4B400] font-semibold'
+                        : 'text-white/80 hover:bg-white/5'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))
+              )}
+            </div>
+            {value && (
+              <div className="p-2 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => { onChange(''); setOpen(false) }}
+                  className="text-xs text-red-400/70 hover:text-red-400 font-heading font-semibold"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Field>
+  )
+}
 
 /* ── Image Input with upload option ── */
 const ImageField = ({ label, value, onChange, required }) => {
@@ -63,17 +154,65 @@ const ImageField = ({ label, value, onChange, required }) => {
 }
 
 /* ── Product Form Modal ── */
-const ProductForm = ({ initial, onSave, onClose, saving }) => {
+const ProductForm = ({ initial, onSave, onClose, saving, existingSlugs }) => {
   const [form, setForm] = useState(initial || emptyProduct())
   const [openGroup, setOpenGroup] = useState(0)
 
+  useEffect(() => {
+    if (!initial) {
+      setForm(emptyProduct())
+      return
+    }
+
+    setForm({
+      ...emptyProduct(),
+      ...initial,
+      specs: Array.from({ length: 4 }, (_, i) => initial.specs?.[i] || ''),
+      images: (() => {
+        const existing = initial.images?.filter(Boolean) || []
+        return [...existing, ''] // one empty at end for adding more
+      })(),
+      specGroups: Array.isArray(initial.specGroups) && initial.specGroups.length > 0
+        ? initial.specGroups
+        : emptyProduct().specGroups,
+    })
+  }, [initial])
+
+  const [slugError, setSlugError] = useState('')
+
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }))
+
+  /* Auto-generate slug — append suffix if duplicate */
+  const handleNameChange = (name) => {
+    const base = toSlug(name)
+    const otherSlugs = existingSlugs.filter((s) => s !== initial?.id)
+    let slug = base
+    let counter = 2
+    while (otherSlugs.includes(slug)) {
+      slug = `${base}-${counter}`
+      counter++
+    }
+    setSlugError('')
+    setForm((f) => ({ ...f, name, id: slug }))
+  }
 
   const setSpec = (i, val) => {
     const arr = [...form.specs]; arr[i] = val; set('specs', arr)
   }
   const setImage = (i, val) => {
-    const arr = [...form.images]; arr[i] = val; set('images', arr)
+    const arr = [...form.images]
+    arr[i] = val
+    // if last field is now filled, append a new empty one
+    const allFilled = arr.every((v) => v.trim() !== '')
+    if (allFilled) arr.push('')
+    set('images', arr)
+  }
+
+  const removeImage = (i) => {
+    const arr = form.images.filter((_, idx) => idx !== i)
+    // always keep at least one empty slot
+    if (arr.length === 0 || arr.every((v) => v.trim() !== '')) arr.push('')
+    set('images', arr)
   }
   const setGroupItem = (gi, ii, key, val) => {
     const groups = form.specGroups.map((g, gIdx) => {
@@ -97,7 +236,7 @@ const ProductForm = ({ initial, onSave, onClose, saving }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    // Clean empty strings
+    if (slugError) return
     const cleaned = {
       ...form,
       specs:  form.specs.filter(Boolean),
@@ -108,6 +247,7 @@ const ProductForm = ({ initial, onSave, onClose, saving }) => {
     }
     onSave(cleaned)
   }
+
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center overflow-y-auto py-8 px-4">
@@ -127,22 +267,29 @@ const ProductForm = ({ initial, onSave, onClose, saving }) => {
 
           {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Product ID (slug)">
-              <input className={inp} placeholder="toyota-corolla" value={form.id} onChange={(e) => set('id', e.target.value)} required />
-            </Field>
             <Field label="Name">
-              <input className={inp} placeholder="Toyota Corolla" value={form.name} onChange={(e) => set('name', e.target.value)} required />
+              <input
+                className={inp}
+                placeholder="Toyota Hilux Revo"
+                value={form.name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                required
+              />
+            </Field>
+            <Field label="Auto Slug">
+              <div className="flex items-center gap-2">
+                <input className={`${inp} opacity-50 cursor-not-allowed`} value={form.id} readOnly />
+              </div>
+              {slugError && <p className="text-red-400 text-xs mt-1">{slugError}</p>}
             </Field>
             <Field label="Model Code">
               <input className={inp} placeholder="ZRE172-AEXNKW" value={form.model} onChange={(e) => set('model', e.target.value)} required />
             </Field>
-            <Field label="Type">
-              <input className={inp} placeholder="Sedan / SUV / Hatchback" value={form.type} onChange={(e) => set('type', e.target.value)} required />
-            </Field>
             <Field label="Category">
-              <input className={inp} placeholder="Cars / Sedan / SUV / Hatchback" value={form.category} onChange={(e) => set('category', e.target.value)} required />
+              <input className={inp} placeholder="Cars" value={form.category} onChange={(e) => set('category', e.target.value)} required />
             </Field>
           </div>
+          <TypeSelector value={form.type} onChange={(v) => set('type', v)} />
 
           {/* In Stock */}
           <div className="flex items-center gap-3">
@@ -170,12 +317,32 @@ const ProductForm = ({ initial, onSave, onClose, saving }) => {
             </div>
           </div>
 
-          {/* Gallery Images */}
+          {/* Gallery Images — dynamic, infinite */}
           <div>
-            <p className="text-xs font-heading font-semibold text-white/50 uppercase tracking-wider mb-3">Gallery Images (up to 6)</p>
+            <p className="text-xs font-heading font-semibold text-white/50 uppercase tracking-wider mb-3">
+              Gallery Images <span className="text-white/20 normal-case font-normal">(fill last field to add more)</span>
+            </p>
             <div className="flex flex-col gap-3">
               {form.images.map((img, i) => (
-                <ImageField key={i} label={`Image ${i + 1}`} value={img} onChange={(v) => setImage(i, v)} />
+                <div key={i} className="flex gap-2 items-start">
+                  <div className="flex-1">
+                    <ImageField
+                      label={`Image ${i + 1}${i === form.images.length - 1 ? ' (fill to add more)' : ''}`}
+                      value={img}
+                      onChange={(v) => setImage(i, v)}
+                    />
+                  </div>
+                  {form.images.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="mt-7 flex-shrink-0 text-red-400/50 hover:text-red-400 transition-colors"
+                      aria-label="Remove image"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -240,6 +407,7 @@ const Admin = () => {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [deleting, setDeleting] = useState(null)
+  const [activeFilter, setActiveFilter] = useState('All')
 
   // Auth guard
   useEffect(() => {
@@ -302,9 +470,7 @@ const Admin = () => {
         {/* Top bar */}
         <div className="bg-[#1a1a1a] border-b border-white/10 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#F4B400] flex items-center justify-center">
-              <Truck size={18} className="text-[#111]" strokeWidth={2.2} />
-            </div>
+            <BrandIcon sizeClassName="w-9 h-9" />
             <div>
               <p className="font-heading font-black text-white text-base uppercase tracking-tight leading-none">{SITE_NAME}</p>
               <p className="text-white/30 text-[10px] font-heading uppercase tracking-widest mt-0.5">Admin Panel</p>
@@ -331,6 +497,35 @@ const Admin = () => {
             </div>
           </div>
 
+          {/* Search + Filter */}
+          {!loading && products.length > 0 && (
+            <div className="flex flex-col gap-3 mb-6">
+              {/* Search by name */}
+              <input
+                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/20 outline-none focus:border-[#F4B400] transition-colors w-full max-w-sm"
+                placeholder="Search by name e.g. Toyota Hilux Revo..."
+                value={activeFilter.startsWith('__search:') ? activeFilter.slice(9) : ''}
+                onChange={(e) => setActiveFilter(e.target.value ? `__search:${e.target.value}` : 'All')}
+              />
+              {/* Category/type tabs */}
+              <div className="flex flex-wrap gap-2">
+                {['All', ...new Set(products.flatMap((p) => [p.category, p.type].filter(Boolean)))].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveFilter(cat)}
+                    className={`px-5 py-2.5 text-xs font-heading font-semibold transition-all duration-200 ${
+                      activeFilter === cat
+                        ? 'bg-[#F4B400] text-[#111]'
+                        : 'bg-white/5 text-white/50 border border-white/10 hover:border-[#F4B400]'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 size={32} className="animate-spin text-[#F4B400]" />
@@ -348,7 +543,12 @@ const Admin = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {products.map((p) => (
+              {(activeFilter === 'All'
+                ? products
+                : activeFilter.startsWith('__search:')
+                  ? products.filter((p) => p.name.toLowerCase().includes(activeFilter.slice(9).toLowerCase()))
+                  : products.filter((p) => p.category === activeFilter || p.type === activeFilter)
+              ).map((p) => (
                 <div key={p.id} className="bg-[#1a1a1a] border border-white/10 rounded-2xl overflow-hidden hover:border-[#F4B400]/40 transition-colors group">
                   {/* Image */}
                   <div className="relative aspect-[16/10] overflow-hidden bg-white/5">
@@ -397,6 +597,7 @@ const Admin = () => {
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null) }}
           saving={saving}
+          existingSlugs={products.map((p) => p.id)}
         />
       )}
     </>

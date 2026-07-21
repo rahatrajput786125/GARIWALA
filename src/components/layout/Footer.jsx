@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
-  Zap,
   Phone,
   Mail,
   MapPin,
@@ -23,6 +22,7 @@ import {
 import Container from '@/components/Container'
 import Input     from '@/components/Input'
 import Button    from '@/components/Button'
+import BrandIcon from '@/components/BrandIcon'
 import { NAV_LINKS, SITE_NAME, CONTACT_INFO } from '@/constants'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -69,9 +69,9 @@ const SocialIcon = ({ icon: Icon, href, label }) => (
     whileHover={{ scale: 1.1, y: -2 }}
     whileTap={{ scale: 0.95 }}
     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-    className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-white/40 hover:text-heading hover:bg-primary hover:border-primary hover:shadow-primary transition-[background,border-color,box-shadow,color] duration-300 will-change-transform"
+    className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-white/70 hover:text-heading hover:bg-primary hover:border-primary hover:shadow-primary transition-[background,border-color,box-shadow,color] duration-300 will-change-transform"
   >
-    <Icon size={15} aria-hidden="true" />
+    <Icon size={15} strokeWidth={2.2} aria-hidden="true" />
   </motion.a>
 )
 
@@ -339,7 +339,7 @@ const Footer = () => {
         <div className="h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" aria-hidden="true" />
 
         {/* ── Main grid ── */}
-        <Container className="relative z-10">
+        <Container className="relative z-10 max-w-6xl">
           <div
             ref={colsRef}
             className="py-16 lg:py-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 xl:gap-10"
@@ -348,13 +348,14 @@ const Footer = () => {
             <div className="sm:col-span-2 lg:col-span-1">
               <Link
                 to="/"
-                className="flex items-center gap-3 mb-5 group w-fit"
+                className="flex items-center gap-3 mb-5 group w-fit max-w-full"
                 aria-label={`${SITE_NAME} home`}
               >
-                <span className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-primary transition-all duration-300 group-hover:scale-105 group-hover:shadow-primary-lg">
-                  <Zap size={16} className="text-heading fill-heading" aria-hidden="true" />
-                </span>
-                <span className="font-heading font-black text-xl text-white tracking-tight">
+                <BrandIcon
+                  sizeClassName="w-10 h-10 sm:w-12 sm:h-12"
+                  className="group-hover:scale-105 transition-transform duration-300"
+                />
+                <span className="font-heading font-black text-xl text-white tracking-tight truncate max-w-[180px] sm:max-w-[220px]">
                   {SITE_NAME}
                 </span>
               </Link>

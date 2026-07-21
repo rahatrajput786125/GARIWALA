@@ -1,13 +1,18 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { NavLink, Link } from 'react-router-dom'
-import { Menu, X, ChevronDown, Search, Phone, Mail, Truck } from 'lucide-react'
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
+import { Menu, X, ChevronDown, Search, Phone, Mail, Truck, Facebook, Instagram, Linkedin, Youtube, Twitter } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { NAV_LINKS, SITE_NAME, CONTACT_INFO } from '@/constants'
 import { cn } from '@/utils/helpers'
 import { useNavScroll } from '@/hooks/useNavScroll'
+import BrandIcon from '@/components/BrandIcon'
 
-const BrandLogo = ({ name, sub }) => (
-  <div className="flex flex-col items-center justify-center px-4 py-1 border-r border-border last:border-r-0 cursor-pointer group">
+const BrandLogo = ({ name, sub, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex flex-col items-center justify-center px-4 py-1 border-r border-border last:border-r-0 cursor-pointer group"
+  >
     <span className="font-heading font-black text-heading text-sm tracking-tight group-hover:text-primary transition-colors duration-200 leading-none">
       {name}
     </span>
@@ -16,7 +21,7 @@ const BrandLogo = ({ name, sub }) => (
         {sub}
       </span>
     )}
-  </div>
+  </button>
 )
 
 const SocialBtn = ({ href, label, children }) => (
@@ -42,11 +47,10 @@ const topLinks = [
 ]
 
 const mainNav = [
-  { label: 'About Us',         path: '/about',   },
-  { label: 'Products',         path: '/projects', },
-  { label: 'Gallery', path: '/gallery',     },
-  { label: 'Services',      path: '/services', },
-  { label: 'Dealers',          path: '/contact',   },
+  { label: 'About Us',     path: '/about',},
+  { label: 'Gallery',      path: '/gallery',},
+  { label: 'Services',     path: '/services',},
+  { label: 'Dealers',      path: '/contact',},
 ]
 
 const drawerVariants = {
@@ -74,6 +78,22 @@ const Navbar = () => {
   const searchRef                   = useRef(null)
   const close                       = useCallback(() => setOpen(false), [])
   const navState                    = useNavScroll(80)
+  const navigate                    = useNavigate()
+  const location                    = useLocation()
+
+  const handleSearch = useCallback((value, shouldClose = true) => {
+    const trimmed = value.trim()
+    setSearch(trimmed)
+    if (shouldClose) setSearchOpen(false)
+
+    const nextPath = trimmed
+      ? `/gallery?search=${encodeURIComponent(trimmed)}`
+      : '/gallery'
+
+    const currentSearch = new URLSearchParams(location.search).get('search') || ''
+    if (location.pathname === '/gallery' && currentSearch === trimmed) return
+    navigate(nextPath)
+  }, [location.pathname, location.search, navigate])
 
   useEffect(() => {
     if (!searchOpen) return
@@ -110,19 +130,29 @@ const Navbar = () => {
             {/* Center — social icons */}
             <div className="flex items-center gap-1.5">
               <SocialBtn href="#" label="Facebook">
-                <span className="w-6 h-6 rounded-full bg-[#1877F2] flex items-center justify-center text-white text-[10px] font-black">f</span>
+                <span className="w-6 h-6 rounded-full bg-[#1877F2] flex items-center justify-center text-white">
+                  <Facebook size={12} strokeWidth={2.2} aria-hidden="true" />
+                </span>
               </SocialBtn>
               <SocialBtn href="#" label="Twitter">
-                <span className="w-6 h-6 rounded-full bg-[#1DA1F2] flex items-center justify-center text-white text-[10px] font-black">𝕏</span>
+                <span className="w-6 h-6 rounded-full bg-[#0F172A] flex items-center justify-center text-white">
+                  <Twitter size={12} strokeWidth={2.2} aria-hidden="true" />
+                </span>
               </SocialBtn>
               <SocialBtn href="#" label="YouTube">
-                <span className="w-6 h-6 rounded-full bg-[#FF0000] flex items-center justify-center text-white text-[10px] font-black">▶</span>
+                <span className="w-6 h-6 rounded-full bg-[#FF0000] flex items-center justify-center text-white">
+                  <Youtube size={12} strokeWidth={2.2} aria-hidden="true" />
+                </span>
               </SocialBtn>
               <SocialBtn href="#" label="LinkedIn">
-                <span className="w-6 h-6 rounded-full bg-[#0A66C2] flex items-center justify-center text-white text-[10px] font-black">in</span>
+                <span className="w-6 h-6 rounded-full bg-[#0A66C2] flex items-center justify-center text-white">
+                  <Linkedin size={12} strokeWidth={2.2} aria-hidden="true" />
+                </span>
               </SocialBtn>
               <SocialBtn href="#" label="Instagram">
-                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center text-white text-[10px] font-black">◎</span>
+                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center text-white">
+                  <Instagram size={12} strokeWidth={2.2} aria-hidden="true" />
+                </span>
               </SocialBtn>
             </div>
 
@@ -146,22 +176,23 @@ const Navbar = () => {
 
               {/* Search — white border on yellow bg */}
               <div ref={searchRef} className="ml-4 flex items-center">
-                <div className="flex items-center border-2 border-white rounded-sm overflow-hidden h-7 bg-white">
+                <form onSubmit={(e) => { e.preventDefault(); handleSearch(search) }} className="flex items-center border-2 border-white rounded-sm overflow-hidden h-7 bg-white">
                   <input
                     type="search"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => handleSearch(e.target.value, false)}
                     placeholder="Search"
                     aria-label="Search"
                     className="w-32 px-2.5 text-[11px] font-sans text-heading placeholder:text-body/60 outline-none bg-white h-full"
                   />
                   <button
+                    type="submit"
                     aria-label="Submit search"
                     className="w-7 h-full bg-white border-l border-border flex items-center justify-center text-heading hover:bg-surface transition-colors"
                   >
                     <Search size={12} aria-hidden="true" />
                   </button>
-                </div>
+                </form>
               </div>
             </div>
           </div>
@@ -177,9 +208,7 @@ const Navbar = () => {
               className="flex items-center gap-3 shrink-0 group"
               aria-label={`${SITE_NAME} — Home`}
             >
-              <div className="w-12 h-12 rounded-xl bg-primary group-hover:bg-primary-500 flex items-center justify-center transition-colors duration-300 shrink-0 shadow-primary">
-                <Truck size={24} className="text-heading" strokeWidth={2.2} aria-hidden="true" />
-              </div>
+              <BrandIcon sizeClassName="w-12 h-12" className="group-hover:scale-105 transition-transform duration-300" />
               <div className="leading-none">
                 <p className="font-heading font-black text-heading text-lg tracking-tight uppercase leading-tight group-hover:text-primary transition-colors duration-300">
                   {SITE_NAME}
@@ -192,9 +221,14 @@ const Navbar = () => {
 
             {/* Brand partner logos — desktop */}
             <div className="hidden xl:flex items-center border border-border rounded-sm mx-6 shrink-0">
-              <BrandLogo name="JAC" sub="MOTORS" />
-              <BrandLogo name="DONGFENG" sub="Trucks" />
-              <BrandLogo name="RENAULT" sub="TRUCKS" />
+              <BrandLogo name="HONDA" sub="CARS" onClick={() => handleSearch('Honda')} />
+              <BrandLogo name="JAC" sub="CARS" onClick={() => handleSearch('JAC')} />
+              <BrandLogo name="TOYOTA" sub="CARS" onClick={() => handleSearch('Toyota')} />
+              <BrandLogo name="SUZUKI" sub="CARS" onClick={() => handleSearch('Suzuki')} />
+              <BrandLogo name="KIA" sub="CARS" onClick={() => handleSearch('Kia')} />
+              <BrandLogo name="CHANGAN" sub="CARS" onClick={() => handleSearch('Changan')} />
+              <BrandLogo name="BYD" sub="CARS" onClick={() => handleSearch('Byd')} />
+              <BrandLogo name="HYUNDAI" sub="CARS" onClick={() => handleSearch('Hyundai')} />
             </div>
 
             {/* Main nav — desktop */}
@@ -274,22 +308,23 @@ const Navbar = () => {
                 transition={{ duration: 0.25 }}
                 className="lg:hidden overflow-hidden border-t border-border"
               >
-                <div className="px-4 py-3 flex items-center gap-2">
+                <form onSubmit={(e) => { e.preventDefault(); handleSearch(search) }} className="px-4 py-3 flex items-center gap-2">
                   <input
                     autoFocus
                     type="search"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => handleSearch(e.target.value, false)}
                     placeholder="Search..."
                     className="flex-1 h-9 px-3 rounded border border-border text-sm outline-none focus:border-primary transition-colors"
                   />
                   <button
+                    type="submit"
                     aria-label="Submit search"
                     className="w-9 h-9 rounded bg-primary flex items-center justify-center text-heading"
                   >
                     <Search size={14} aria-hidden="true" />
                   </button>
-                </div>
+                </form>
               </motion.div>
             )}
           </AnimatePresence>
@@ -323,9 +358,7 @@ const Navbar = () => {
               <div className="h-1.5 bg-primary w-full shrink-0" />
               <div className="flex items-center justify-between px-5 h-[68px] border-b border-border shrink-0">
                 <Link to="/" className="flex items-center gap-2.5" onClick={close}>
-                  <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-primary shrink-0">
-                    <Truck size={18} className="text-heading" strokeWidth={2.2} aria-hidden="true" />
-                  </div>
+                  <BrandIcon sizeClassName="w-9 h-9" />
                   <span className="font-heading font-black text-heading text-base uppercase tracking-tight">
                     {SITE_NAME}
                   </span>

@@ -1,4 +1,6 @@
-const BASE = 'http://localhost:5000/api'
+import { API_BASE_URL } from '../config/appConfig'
+
+const BASE = API_BASE_URL
 
 const getToken = () => localStorage.getItem('token')
 
@@ -49,3 +51,16 @@ export const uploadImage = (file) => {
     body: fd,
   }).then((r) => r.json())
 }
+
+export const sendContactMessage = (data) =>
+  fetch(`${BASE}/contact`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(data),
+  }).then(async (res) => {
+    const payload = await res.json()
+    if (!res.ok) {
+      throw new Error(payload?.message || 'Unable to send contact message')
+    }
+    return payload
+  })

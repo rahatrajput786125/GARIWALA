@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Truck, Lock, Mail, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, Loader2 } from 'lucide-react'
 import { SITE_NAME } from '@/constants'
 import { login } from '@/utils/api'
+import BrandIcon from '@/components/BrandIcon'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -41,8 +42,8 @@ const Login = () => {
 
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-[#F4B400] flex items-center justify-center mb-4 shadow-lg">
-              <Truck size={32} className="text-[#111]" strokeWidth={2.2} />
+            <div className="mb-4">
+              <BrandIcon sizeClassName="w-16 h-16" />
             </div>
             <h1 className="font-heading font-black text-white text-2xl uppercase tracking-tight">{SITE_NAME}</h1>
             <p className="text-white/40 text-sm font-heading mt-1 tracking-widest uppercase">Admin Panel</p>

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, FileText, MapPin, Download } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, FileText, MapPin, Download, Loader2 } from 'lucide-react'
 import Container from '@/components/Container'
 import { getProductById, getProducts } from '@/utils/api'
+import { getProductSlug } from '@/utils/searchUtils'
+import jsPDF from 'jspdf'
 
 /* ── Accordion row ── */
 const SpecGroup = ({ group, defaultOpen }) => {
@@ -43,10 +45,18 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
   const [galleryPage, setGalleryPage] = useState(0)
+  const [downloading, setDownloading] = useState(false)
 
   const THUMBS_VISIBLE = 5
-  const maxGalleryStart = Math.max((product?.images?.length || 0) - THUMBS_VISIBLE, 0)
-  const visibleThumbs = product?.images?.slice(galleryPage, galleryPage + THUMBS_VISIBLE) || []
+  // Use images[] array directly; fallback to product.image if images is empty
+  const allImages = product
+    ? (product.images && product.images.length > 0
+        ? product.images
+        : [product.image]
+      ).filter(Boolean)
+    : []
+  const maxGalleryStart = Math.max(allImages.length - THUMBS_VISIBLE, 0)
+  const visibleThumbs = allImages.slice(galleryPage, galleryPage + THUMBS_VISIBLE)
 
   useEffect(() => {
     setLoading(true)
@@ -55,10 +65,15 @@ const ProductDetail = () => {
     getProductById(id).then((data) => {
       if (data && data.id) {
         setProduct(data)
-        // fetch related from same category
         getProducts().then((all) => {
-          if (Array.isArray(all))
-            setRelated(all.filter((p) => p.id !== id && p.category === data.category).slice(0, 3))
+          if (Array.isArray(all)) {
+            const currentSlug = getProductSlug(data)
+            const sameCategory = all.filter((p) => {
+              const pSlug = getProductSlug(p)
+              return pSlug !== currentSlug && p.category === data.category
+            })
+            setRelated(sameCategory.slice(0, 3))
+          }
         })
       } else {
         setProduct(null)
@@ -67,11 +82,356 @@ const ProductDetail = () => {
     })
   }, [id])
 
+  const handleDownloadBrochure = async () => {
+    if (!product) return
+    setDownloading(true)
+    try {
+      const PROXY = 'http://localhost:5000/api/proxy-image?url='
+
+      // Fetch image → base64 via proxy
+      const fetchB64 = async (url) => {
+        try {
+          const res = await fetch(PROXY + encodeURIComponent(url))
+          if (!res.ok) return null
+          const blob = await res.blob()
+          return await new Promise((resolve) => {
+            const r = new FileReader()
+            r.onloadend = () => resolve(r.result)
+            r.readAsDataURL(blob)
+          })
+        } catch { return null }
+      }
+
+      // Load base64 → HTMLImageElement
+      const loadImg = (src) => new Promise((resolve) => {
+        const img = new Image()
+        img.onload = () => resolve(img)
+        img.onerror = () => resolve(null)
+        img.src = src
+      })
+
+      // Crop image to exact box (object-fit: cover) using offscreen canvas
+      // boxWpx / boxHpx = target pixel dimensions on canvas
+      const cropCover = (img, boxWpx, boxHpx) => {
+        const c = document.createElement('canvas')
+        c.width  = boxWpx
+        c.height = boxHpx
+        const ctx = c.getContext('2d')
+        const srcAspect = img.naturalWidth / img.naturalHeight
+        const boxAspect = boxWpx / boxHpx
+        let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
+        if (srcAspect > boxAspect) {
+          // image wider than box → crop sides
+          sw = img.naturalHeight * boxAspect
+          sx = (img.naturalWidth - sw) / 2
+        } else {
+          // image taller than box → crop top/bottom
+          sh = img.naturalWidth / boxAspect
+          sy = (img.naturalHeight - sh) / 2
+        }
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, boxWpx, boxHpx)
+        return c.toDataURL('image/jpeg', 0.92)
+      }
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const PW = 210
+      const PH = 297
+      const ML = 14
+      const MR = 14
+      const CW = PW - ML - MR   // 182mm
+      const FOOTER_H = 10
+      const SAFE_BOTTOM = PH - FOOTER_H - 4  // last safe Y before footer
+      let y = 0
+
+      // Add new page and reset y to top margin
+      const newPage = () => {
+        drawFooter(pdf.internal.getNumberOfPages())
+        pdf.addPage()
+        y = 14
+      }
+
+      // Ensure `needed` mm fits before footer; if not, new page
+      const need = (needed) => { if (y + needed > SAFE_BOTTOM) newPage() }
+
+      // Draw footer for a specific page (called before addPage)
+      const drawFooter = (pageNum) => {
+        pdf.setPage(pageNum)
+        pdf.setFillColor(17, 17, 17)
+        pdf.rect(0, PH - FOOTER_H, PW, FOOTER_H, 'F')
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(7)
+        pdf.setTextColor(244, 180, 0)
+        pdf.text('GARIWALA AUTOMOBILES', ML, PH - 3.5)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(150, 150, 150)
+        pdf.text('info@gariwala.com  ·  0313-2553864  ·  gariwala.com', PW / 2, PH - 3.5, { align: 'center' })
+      }
+
+      // ── HEADER (yellow bar) ──
+      pdf.setFillColor(244, 180, 0)
+      pdf.rect(0, 0, PW, 22, 'F')
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(14)
+      pdf.setTextColor(17, 17, 17)
+      pdf.text('GARIWALA AUTOMOBILES', ML, 10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(7)
+      pdf.setTextColor(60, 60, 60)
+      pdf.text('New M. A. Jinnah Rd, Karachi, 74400  ·  0313-2553864  ·  info@gariwala.com', ML, 16)
+      const dateStr = new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' })
+      pdf.setFontSize(7)
+      pdf.text('Product Brochure  ·  ' + dateStr, PW - MR, 10, { align: 'right' })
+      y = 26
+
+      // ── HERO IMAGE ──
+      const heroUrl = allImages[0] || product.image
+      const heroB64 = await fetchB64(heroUrl)
+      if (heroB64) {
+        const heroImg = await loadImg(heroB64)
+        if (heroImg) {
+          // Fixed hero box: full content width, 16:9 ratio
+          const heroBoxW = Math.round(CW * 3.7795)   // mm → px at 96dpi
+          const heroBoxH = Math.round(heroBoxW * 9 / 16)
+          const heroMM_H = CW * 9 / 16               // height in mm
+          const cropped = cropCover(heroImg, heroBoxW, heroBoxH)
+          pdf.addImage(cropped, 'JPEG', ML, y, CW, heroMM_H)
+          // Dark gradient overlay
+          pdf.setFillColor(0, 0, 0)
+          pdf.setGState(new pdf.GState({ opacity: 0.45 }))
+          pdf.rect(ML, y + heroMM_H - 28, CW, 28, 'F')
+          pdf.setGState(new pdf.GState({ opacity: 1 }))
+          pdf.setFont('helvetica', 'bold')
+          pdf.setFontSize(18)
+          pdf.setTextColor(255, 255, 255)
+          pdf.text(product.name, ML + 4, y + heroMM_H - 14)
+          pdf.setFont('helvetica', 'normal')
+          pdf.setFontSize(9)
+          pdf.setTextColor(200, 200, 200)
+          pdf.text(`${product.model || ''}  ·  ${product.type || ''}`, ML + 4, y + heroMM_H - 6)
+          y += heroMM_H + 8
+        }
+      } else {
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(20)
+        pdf.setTextColor(17, 17, 17)
+        pdf.text(product.name, ML, y + 10)
+        y += 18
+      }
+
+      // ── OVERVIEW ──
+      if (product.overview) {
+        need(20)
+        pdf.setDrawColor(244, 180, 0)
+        pdf.setLineWidth(0.8)
+        pdf.line(ML, y, ML, y + 4)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(8)
+        pdf.setTextColor(244, 180, 0)
+        pdf.text('OVERVIEW', ML + 3, y + 3)
+        y += 7
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(9)
+        pdf.setTextColor(55, 65, 81)
+        const lines = pdf.splitTextToSize(product.overview, CW)
+        lines.forEach((line) => {
+          need(5)
+          pdf.text(line, ML, y)
+          y += 4.5
+        })
+        y += 4
+      }
+
+      // ── QUICK SPECS BADGES ──
+      if (product.specs?.length > 0) {
+        need(14)
+        pdf.setFillColor(249, 250, 251)
+        pdf.rect(ML, y, CW, 12, 'F')
+        let bx = ML + 3
+        product.specs.forEach((spec) => {
+          const tw = pdf.getTextWidth(spec) + 6
+          if (bx + tw > PW - MR - 3) return
+          pdf.setFillColor(244, 180, 0)
+          pdf.rect(bx, y + 2, tw, 8, 'F')
+          pdf.setFont('helvetica', 'bold')
+          pdf.setFontSize(7)
+          pdf.setTextColor(17, 17, 17)
+          pdf.text(spec, bx + 3, y + 7.5)
+          bx += tw + 4
+        })
+        y += 16
+      }
+
+      // ── TECHNICAL SPECIFICATIONS ──
+      if (product.specGroups?.length > 0) {
+        need(16)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(8)
+        pdf.setTextColor(244, 180, 0)
+        pdf.text('TECHNICAL SPECIFICATIONS', ML, y)
+        pdf.setDrawColor(244, 180, 0)
+        pdf.setLineWidth(0.4)
+        pdf.line(ML, y + 1.5, PW - MR, y + 1.5)
+        y += 7
+
+        const colW = (CW - 6) / 2
+        const ROW_H = 5.5
+        const GROUP_LABEL_H = 7
+
+        // Lay out groups in 2 columns, tracking each column's Y independently
+        // When a column overflows the page, start a new page and reset both cols
+        let colY = [y, y]
+        let col = 0
+
+        const flushPage = () => {
+          drawFooter(pdf.internal.getNumberOfPages())
+          pdf.addPage()
+          y = 14
+          colY = [y, y]
+          col = 0
+        }
+
+        product.specGroups.forEach((group) => {
+          const groupH = GROUP_LABEL_H + group.items.length * ROW_H + 4
+          const cx = col === 0 ? ML : ML + colW + 6
+          let gy = colY[col]
+
+          // If this group doesn't fit in current column
+          if (gy + groupH > SAFE_BOTTOM) {
+            if (col === 0) {
+              // Try right column
+              col = 1
+              gy = colY[1]
+              if (gy + groupH > SAFE_BOTTOM) flushPage()
+            } else {
+              flushPage()
+            }
+          }
+
+          const finalCx = col === 0 ? ML : ML + colW + 6
+          gy = colY[col]
+
+          // Group header bar
+          pdf.setFillColor(244, 180, 0)
+          pdf.rect(finalCx, gy, colW, 6, 'F')
+          pdf.setFont('helvetica', 'bold')
+          pdf.setFontSize(7)
+          pdf.setTextColor(17, 17, 17)
+          pdf.text(group.label.toUpperCase(), finalCx + 2, gy + 4.2)
+          gy += GROUP_LABEL_H
+
+          // Rows
+          group.items.forEach((item, ii) => {
+            if (ii % 2 === 0) {
+              pdf.setFillColor(249, 250, 251)
+              pdf.rect(finalCx, gy - 1, colW, ROW_H, 'F')
+            }
+            pdf.setFont('helvetica', 'normal')
+            pdf.setFontSize(7.5)
+            pdf.setTextColor(107, 114, 128)
+            pdf.text(item.label, finalCx + 2, gy + 3)
+            pdf.setFont('helvetica', 'bold')
+            pdf.setTextColor(17, 17, 17)
+            pdf.text(String(item.value), finalCx + colW - 2, gy + 3, { align: 'right' })
+            gy += ROW_H
+          })
+
+          gy += 4
+          colY[col] = gy
+          col = col === 0 ? 1 : 0  // alternate columns
+        })
+
+        y = Math.max(colY[0], colY[1]) + 6
+      }
+
+      // ── GALLERY ──
+      if (allImages.length > 0) {
+        need(20)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(8)
+        pdf.setTextColor(244, 180, 0)
+        pdf.text('PRODUCT GALLERY', ML, y)
+        pdf.setDrawColor(244, 180, 0)
+        pdf.setLineWidth(0.4)
+        pdf.line(ML, y + 1.5, PW - MR, y + 1.5)
+        y += 7
+
+        const COLS = 3
+        const GAP = 3
+        const imgW = (CW - GAP * (COLS - 1)) / COLS   // ~57.3mm
+        const imgH = Math.round(imgW * 2 / 3 * 10) / 10  // 3:2 ratio ~38.2mm
+        const PX_W = 480
+        const PX_H = Math.round(PX_W * 2 / 3)           // 320px
+
+        // Fetch + crop all gallery images in parallel
+        const galleryImgs = await Promise.all(
+          allImages.map(async (url) => {
+            const b64 = await fetchB64(url)
+            if (!b64) return null
+            const img = await loadImg(b64)
+            return img ? cropCover(img, PX_W, PX_H) : null
+          })
+        )
+
+        for (let i = 0; i < galleryImgs.length; i++) {
+          const col = i % COLS
+
+          // Start of a new row
+          if (col === 0) {
+            need(imgH + 4)   // ensure full row fits before drawing anything
+          }
+
+          const gx = ML + col * (imgW + GAP)
+          const cropped = galleryImgs[i]
+
+          if (cropped) {
+            pdf.addImage(cropped, 'JPEG', gx, y, imgW, imgH)
+          } else {
+            pdf.setFillColor(240, 240, 240)
+            pdf.rect(gx, y, imgW, imgH, 'F')
+          }
+
+          // Number badge
+          pdf.setFillColor(244, 180, 0)
+          pdf.rect(gx, y + imgH - 5, 10, 5, 'F')
+          pdf.setFont('helvetica', 'bold')
+          pdf.setFontSize(6)
+          pdf.setTextColor(17, 17, 17)
+          pdf.text(`${i + 1}`, gx + 5, y + imgH - 1.5, { align: 'center' })
+
+          // Advance Y only after completing a full row (or last image)
+          const isLastInRow = col === COLS - 1
+          const isLastImage = i === galleryImgs.length - 1
+          if (isLastInRow || isLastImage) {
+            y += imgH + GAP
+          }
+        }
+        y += 6
+      }
+
+      // ── FOOTER on all pages ──
+      const totalPages = pdf.internal.getNumberOfPages()
+      for (let p = 1; p <= totalPages; p++) {
+        drawFooter(p)
+        pdf.setPage(p)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(7)
+        pdf.setTextColor(150, 150, 150)
+        pdf.text(`Page ${p} of ${totalPages}`, PW - MR, PH - 3.5, { align: 'right' })
+      }
+
+      pdf.save(`${product.name.replace(/\s+/g, '-')}-Brochure.pdf`)
+    } catch (e) {
+      console.error('PDF error:', e)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   // Auto-scroll main image every 3 seconds
   useEffect(() => {
-    if (!product?.images?.length) return
+    if (!allImages.length) return
     const timer = setInterval(() => {
-      setActiveImage((c) => (c + 1) % product.images.length)
+      setActiveImage((c) => (c + 1) % allImages.length)
     }, 3000)
     return () => clearInterval(timer)
   }, [product])
@@ -163,7 +523,7 @@ const ProductDetail = () => {
               {/* Main image */}
               <div className="relative overflow-hidden rounded-2xl border border-border bg-surface">
                 <img
-                  src={product.images[activeImage]}
+                  src={allImages[activeImage] || product.image}
                   alt={`${product.name} ${activeImage + 1}`}
                   className="w-full h-[420px] lg:h-[500px] object-cover transition-opacity duration-700"
                 />
@@ -171,7 +531,7 @@ const ProductDetail = () => {
                 <button
                   type="button"
                   aria-label="Previous"
-                  onClick={() => setActiveImage((c) => (c === 0 ? product.images.length - 1 : c - 1))}
+                  onClick={() => setActiveImage((c) => (c === 0 ? allImages.length - 1 : c - 1))}
                   className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/90 border border-white/30 flex items-center justify-center shadow hover:bg-white transition"
                 >
                   <ChevronLeft size={18} />
@@ -179,7 +539,7 @@ const ProductDetail = () => {
                 <button
                   type="button"
                   aria-label="Next"
-                  onClick={() => setActiveImage((c) => (c + 1) % product.images.length)}
+                  onClick={() => setActiveImage((c) => (c + 1) % allImages.length)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/90 border border-white/30 flex items-center justify-center shadow hover:bg-white transition"
                 >
                   <ChevronRight size={18} />
@@ -204,9 +564,12 @@ const ProductDetail = () => {
                 </Link>
                 <button
                   type="button"
-                  className="flex items-center gap-2 border border-border text-heading font-heading font-semibold text-body-sm px-6 py-3 hover:border-[#F4B400] transition"
+                  onClick={handleDownloadBrochure}
+                  disabled={downloading}
+                  className="flex items-center gap-2 border border-border text-heading font-heading font-semibold text-body-sm px-6 py-3 hover:border-[#F4B400] transition disabled:opacity-60"
                 >
-                  <Download size={16} /> Download Brochure
+                  {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  {downloading ? 'Generating...' : 'Download Brochure'}
                 </button>
               </div>
             </div>
@@ -323,6 +686,7 @@ const ProductDetail = () => {
 
         </Container>
       </main>
+
     </>
   )
 }

@@ -6,38 +6,15 @@ import Container from '@/components/Container'
 import Heading from '@/components/Heading'
 
 const DealerListSection = () => {
-  const [activeTab, setActiveTab] = useState('cars')
-
-  const dealers = {
-    cars: [
-      {
-        id: 1,
-        name: 'Main Showroom - Karachi',
-        address: 'New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400',
-        phone: '+92-313-255-3864',
-        hours: 'Mon-Sat: 9:00 AM - 7:00 PM',
-      },
-      
-      
-    ],
-    trucks: [
-      {
-        id: 1,
-        name: 'Commercial Hub - Karachi',
-        address: 'New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400',
-        phone: '+92-313-255-3864',
-        hours: 'Mon-Sat: 8:00 AM - 6:00 PM',
-      },
-      {
-        id: 2,
-        name: 'Industrial Zone - Karachi',
-        address: 'New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400',
-        phone: '+92-313-255-3864',
-        hours: 'Mon-Sat: 8:00 AM - 6:00 PM',
-      },
-     
-    ],
-  }
+  const dealers = [
+    {
+      id: 1,
+      name: 'Main Showroom - Karachi',
+      address: 'New M. A. Jinnah Rd, Shikarpur Colony Muslimabad, Karachi, 74400',
+      phone: '+92-313-255-3864',
+      hours: 'Mon-Sat: 9:00 AM - 7:00 PM',
+    },
+  ]
 
   return (
     <Section className="py-16 bg-surface">
@@ -56,30 +33,9 @@ const DealerListSection = () => {
               Services & Dealer List
             </Heading>
 
-            {/* Service Tabs */}
-            <div className="flex gap-4 mb-8">
-              <motion.button
-                onClick={() => setActiveTab('cars')}
-                className={`flex-1 py-3 px-4 font-heading font-bold text-center transition-all ${
-                  activeTab === 'cars'
-                    ? 'bg-primary text-heading'
-                    : 'bg-white text-heading border-2 border-border'
-                }`}
-                whileHover={{ scale: 1.02 }}
-              >
-                For Cars
-              </motion.button>
-              <motion.button
-                onClick={() => setActiveTab('trucks')}
-                className={`flex-1 py-3 px-4 font-heading font-bold text-center transition-all ${
-                  activeTab === 'trucks'
-                    ? 'bg-primary text-heading'
-                    : 'bg-white text-heading border-2 border-border'
-                }`}
-                whileHover={{ scale: 1.02 }}
-              >
-                For Trucks
-              </motion.button>
+            {/* Service heading */}
+            <div className="mb-8">
+             
             </div>
 
             {/* Service Information Box */}
@@ -109,7 +65,7 @@ const DealerListSection = () => {
 
             {/* Dealers List */}
             <div className="space-y-4">
-              {dealers[activeTab].map((dealer, idx) => (
+              {dealers.map((dealer, idx) => (
                 <motion.div
                   key={dealer.id}
                   initial={{ opacity: 0, y: 10 }}

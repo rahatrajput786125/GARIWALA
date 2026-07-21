@@ -45,6 +45,8 @@ const ProductLineupSection = () => {
   const prevRef = useRef(null)
   const nextRef = useRef(null)
 
+  const normalizeCategory = (value = '') => (value || '').trim().toLowerCase()
+
   const fetchData = () => {
     getProducts().then((data) => {
       if (!Array.isArray(data)) return
@@ -63,15 +65,24 @@ const ProductLineupSection = () => {
     }
   }, [])
 
-  const tabs = [...new Set(allProducts.map((p) => p.category))]
+  const tabs = [...new Set(allProducts.map((p) => (p.category || '').trim()).filter(Boolean))].sort((a, b) => {
+    if (normalizeCategory(a) === 'cars') return -1
+    if (normalizeCategory(b) === 'cars') return 1
+    return a.localeCompare(b)
+  })
 
-  // set first tab on initial load, and fix stale activeTab if category was renamed/deleted
   useEffect(() => {
     if (!tabs.length) return
-    if (!activeTab || !tabs.includes(activeTab)) setActiveTab(tabs[0])
-  }, [allProducts])
+    if (!activeTab || !tabs.some((tab) => normalizeCategory(tab) === normalizeCategory(activeTab))) {
+      setActiveTab(tabs[0])
+    }
+  }, [tabs, activeTab])
 
-  const list = allProducts.filter((p) => p.category === activeTab)
+  const currentCategory = normalizeCategory(activeTab)
+  const list = allProducts.filter((p) => {
+    const productCategory = normalizeCategory(p.category)
+    return currentCategory === 'cars' ? true : productCategory === currentCategory
+  })
 
   return (
     <Section className="bg-white py-0 overflow-hidden" aria-labelledby="lineup-heading">
@@ -82,11 +93,11 @@ const ProductLineupSection = () => {
           We provide a 24/7 customer support
         </p>
         <a
-          href="tel:+923000442552"
+          href="tel:+923132553864"
           className="inline-flex items-center gap-2 text-body text-body-sm hover:text-heading transition-colors mb-3"
         >
           <Phone size={14} className="text-[#F4B400]" aria-hidden="true" />
-          +92-300 0442552
+          +92-313-255-3864
         </a>
         <br />
         <a
@@ -124,7 +135,7 @@ const ProductLineupSection = () => {
               onClick={() => setActiveTab(cat)}
               className={[
                 'relative px-10 py-3 font-heading font-bold text-body-sm tracking-wide transition-all duration-200 focus:outline-none',
-                activeTab === cat
+                normalizeCategory(activeTab) === normalizeCategory(cat)
                   ? 'bg-[#F4B400] text-heading z-10'
                   : 'bg-white text-heading border border-border hover:border-[#F4B400]/50',
               ].join(' ')}

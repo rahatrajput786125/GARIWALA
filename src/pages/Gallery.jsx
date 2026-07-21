@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { motion, AnimatePresence } from 'framer-motion'
 import Section from '@/components/Section'
@@ -8,11 +8,14 @@ import Heading from '@/components/Heading'
 import CtaSection from '@/components/sections/CtaSection'
 import { getProducts } from '@/utils/api'
 import { SITE_NAME } from '@/constants'
+import { searchProducts, getProductSlug } from '@/utils/searchUtils'
 import { ArrowRight } from 'lucide-react'
 
 const Gallery = () => {
+  const location = useLocation()
   const [active, setActive] = useState('All')
   const [galleryItems, setGalleryItems] = useState([])
+  const [searchQuery, setSearchQuery] = useState('')
   const navigate = useNavigate()
 
   const fetchItems = () => {
@@ -25,12 +28,16 @@ const Gallery = () => {
         name: product.name,
         category: product.category,
         type: product.type,
+        createdAt: product.createdAt || product.created_at || product.updatedAt || product.updated_at || '',
       }))
       setGalleryItems(items)
     })
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const queryFromUrl = params.get('search') || ''
+    setSearchQuery(queryFromUrl)
     fetchItems()
     const handler = () => fetchItems()
     window.addEventListener('focus', handler)
@@ -39,16 +46,19 @@ const Gallery = () => {
       window.removeEventListener('focus', handler)
       window.removeEventListener('products_updated', handler)
     }
-  }, [])
+  }, [location.search])
 
-  const categories = ['All', ...new Set(galleryItems.map((g) => g.category))]
+  const categories = ['All', ...new Set(galleryItems.flatMap((g) => [g.category, g.type]))]
 
   // reset active filter if it no longer exists in fetched data
   useEffect(() => {
     if (active !== 'All' && !categories.includes(active)) setActive('All')
-  }, [galleryItems])
+  }, [galleryItems, categories, active])
 
-  const filtered = active === 'All' ? galleryItems : galleryItems.filter((g) => g.category === active)
+  const baseFiltered = active === 'All'
+    ? galleryItems
+    : galleryItems.filter((g) => g.category === active || g.type === active)
+  const filtered = searchProducts(baseFiltered, searchQuery)
 
   return (
     <>
@@ -65,7 +75,9 @@ const Gallery = () => {
               Our <span className="text-gradient">Gallery</span>
             </Heading>
             <p className="text-body-xl text-body leading-relaxed">
-              Explore our complete lineup of cars. Click any image to view full product details.
+              {searchQuery
+                ? `Showing products related to “${searchQuery}”. Exact matches appear first, then similar results.`
+                : 'Explore our complete lineup of cars. Click any image to view full product details.'}
             </p>
           </div>
 
@@ -97,7 +109,7 @@ const Gallery = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.25 }}
-                  onClick={() => navigate(`/product/${item.productId}`)}
+                  onClick={() => navigate(`/product/${getProductSlug(item)}`)}
                   className="group relative aspect-[4/3] overflow-hidden rounded-xl cursor-pointer border border-border hover:border-[#F4B400] transition-all duration-300"
                 >
                   <img

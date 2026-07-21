@@ -9,7 +9,9 @@
 
 @layer base {
   :root {
-    --primary:  #FFC107;
+    --primary:  #F4B400;
+    --primary-500: #F5C33B;
+    --primary-700: #D99900;
     --heading:  #1A1A1A;
     --body:     #6B7280;
     --border:   #E5E7EB;
@@ -45,12 +47,12 @@
   /* ── Scrollbar ── */
   ::-webkit-scrollbar       { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #FFC107; border-radius: 99px; }
-  ::-webkit-scrollbar-thumb:hover { background: #FFB300; }
+  ::-webkit-scrollbar-thumb { background: #F4B400; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #D99900; }
 
   /* ── Selection ── */
-  ::selection      { background: #FFC107; color: #1A1A1A; }
-  ::-moz-selection { background: #FFC107; color: #1A1A1A; }
+  ::selection      { background: #F4B400; color: #1A1A1A; }
+  ::-moz-selection { background: #F4B400; color: #1A1A1A; }
 
   /* ── Focus ring — consistent across all interactive elements ── */
   *:focus-visible {
@@ -122,7 +124,7 @@
 
   /* ── Gradient text ── */
   .text-gradient {
-    background: linear-gradient(135deg, #FFC107 0%, #FF8F00 100%);
+    background: linear-gradient(135deg, #F4B400 0%, #D99900 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -403,13 +405,13 @@
   transition: all 0.3s ease !important;
 }
 .swiper-pagination-bullet-active {
-  background: #FFC107 !important;
+  background: #F4B400 !important;
   width: 28px !important;
   border-radius: 4px !important;
 }
 .swiper-button-next,
 .swiper-button-prev {
-  color: #FFC107 !important;
+  color: #F4B400 !important;
   background: white !important;
   width: 40px !important;
   height: 40px !important;
@@ -421,8 +423,8 @@
 }
 .swiper-button-next:hover,
 .swiper-button-prev:hover {
-  box-shadow: 0 6px 28px rgba(255,193,7,0.28) !important;
-  border-color: rgba(255,193,7,0.35) !important;
+  box-shadow: 0 6px 28px rgba(244,180,0,0.28) !important;
+  border-color: rgba(244,180,0,0.35) !important;
   transform: scale(1.06) !important;
 }
 .swiper-button-next::after,
@@ -451,8 +453,8 @@
 
 .swiper-pagination-custom .swiper-pagination-bullet-active {
   width: 32px !important;
-  background: #FFC107 !important;
-  border-color: #FFC107 !important;
+  background: #F4B400 !important;
+  border-color: #F4B400 !important;
   border-radius: 4px !important;
 }
 
