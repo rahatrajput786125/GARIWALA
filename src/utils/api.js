@@ -69,8 +69,17 @@ export const sendContactMessage = (data) =>
     body: JSON.stringify(data),
   }).then(async (res) => {
     const payload = await res.json()
-    if (!res.ok) {
-      throw new Error(payload?.message || 'Unable to send contact message')
-    }
+    if (!res.ok) throw new Error(payload?.message || 'Unable to send contact message')
+    return payload
+  })
+
+export const sendFeedback = (data) =>
+  fetch(`${BASE}/feedback`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(data),
+  }).then(async (res) => {
+    const payload = await res.json()
+    if (!res.ok) throw new Error(payload?.message || 'Unable to submit feedback')
     return payload
   })

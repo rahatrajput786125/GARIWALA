@@ -12,6 +12,7 @@ import NotFound from '@/pages/NotFound'
 import ProductDetail from '@/pages/ProductDetail'
 import Login from '@/pages/Login'
 import Admin from '@/pages/Admin'
+import Feedback from '@/pages/Feedback'
 
 const App = () => {
   const location = useLocation()
@@ -27,6 +28,7 @@ const App = () => {
             <Route path="/services" element={<Services />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/feedback" element={<Feedback />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<Admin />} />

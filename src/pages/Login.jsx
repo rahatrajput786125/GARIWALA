@@ -67,7 +67,7 @@ const Login = () => {
                   <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
                   <input
                     type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@gariwala.com"
+                    placeholder="admin@gmail.com"
                     className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white text-sm placeholder:text-white/20 outline-none focus:border-[#F4B400] transition-colors"
                   />
                 </div>

@@ -39,11 +39,9 @@ const SocialBtn = ({ href, label, children }) => (
 const topLinks = [
   { label: 'Home',           path: '/' },
   { label: 'Online Booking', path: '/contact' },
-  { label: 'Feedback',       path: '/contact' },
+  { label: 'Feedback',       path: '/feedback' },
   { label: 'Careers',        path: '/about' },
-  { label: 'Sitemap',        path: '/' },
-  { label: 'Contact Us',     path: '/contact' },
-  { label: 'Webmail',        path: '#' },
+  { label: 'Contact Us',     path: '/contact' }
 ]
 
 const mainNav = [
