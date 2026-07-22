@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { Plus, Pencil, Trash2, LogOut, Truck, X, Loader2, ChevronDown, ChevronUp, Image, Save, Upload } from 'lucide-react'
-import { getProducts, createProduct, updateProduct, deleteProduct, uploadImage } from '@/utils/api'
+import { getProducts, createProduct, updateProduct, deleteProduct, uploadImage, uploadImages } from '@/utils/api'
 import { SITE_NAME } from '@/constants'
 import BrandIcon from '@/components/BrandIcon'
 
@@ -126,16 +126,44 @@ const TypeSelector = ({ value, onChange }) => {
 }
 
 /* ── Image Input with upload option ── */
-const ImageField = ({ label, value, onChange, required }) => {
+const ImageField = ({ label, value, onChange, required, onMultipleUpload }) => {
   const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState('')
 
   const handleFile = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    e.target.value = ''
     setUploading(true)
-    const res = await uploadImage(file)
-    if (res.url) onChange(res.url)
+
+    if (files.length === 1 || !onMultipleUpload) {
+      // single upload — always use onChange for first file
+      setProgress('')
+      const res = await uploadImage(files[0])
+      if (res?.url) onChange(res.url)
+      if (files.length > 1 && onMultipleUpload) {
+        // remaining files upload karo in order
+        const extra = []
+        for (let i = 1; i < files.length; i++) {
+          setProgress(`${i + 1}/${files.length}`)
+          const r = await uploadImage(files[i])
+          if (r?.url) extra.push(r.url)
+        }
+        if (extra.length) onMultipleUpload(extra)
+      }
+    } else {
+      // pure multiple — first bhi onMultipleUpload mein jaega
+      const urls = []
+      for (let i = 0; i < files.length; i++) {
+        setProgress(`${i + 1}/${files.length}`)
+        const res = await uploadImage(files[i])
+        if (res?.url) urls.push(res.url)
+      }
+      onMultipleUpload(urls)
+    }
+
     setUploading(false)
+    setProgress('')
   }
 
   return (
@@ -144,8 +172,8 @@ const ImageField = ({ label, value, onChange, required }) => {
         <input className={inp} placeholder="https://... or upload →" value={value} onChange={(e) => onChange(e.target.value)} required={required} />
         <label className="flex-shrink-0 flex items-center gap-1.5 cursor-pointer bg-white/5 border border-white/10 hover:border-[#F4B400] text-white/50 hover:text-[#F4B400] text-xs font-heading font-semibold px-3 rounded-lg transition-colors whitespace-nowrap">
           {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-          {uploading ? '' : 'Upload'}
-          <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={uploading} />
+          {uploading ? (progress || '...') : 'Upload'}
+          <input type="file" accept="image/*" multiple className="hidden" onChange={handleFile} disabled={uploading} />
         </label>
       </div>
       {value && <img src={value} alt="preview" className="mt-2 h-28 w-full object-cover rounded-lg border border-white/10" onError={(e) => e.target.style.display='none'} />}
@@ -200,12 +228,12 @@ const ProductForm = ({ initial, onSave, onClose, saving, existingSlugs }) => {
     const arr = [...form.specs]; arr[i] = val; set('specs', arr)
   }
   const setImage = (i, val) => {
-    const arr = [...form.images]
-    arr[i] = val
-    // if last field is now filled, append a new empty one
-    const allFilled = arr.every((v) => v.trim() !== '')
-    if (allFilled) arr.push('')
-    set('images', arr)
+    setForm((f) => {
+      const arr = [...f.images]
+      arr[i] = val
+      if (arr.every((v) => v.trim() !== '')) arr.push('')
+      return { ...f, images: arr }
+    })
   }
 
   const removeImage = (i) => {
@@ -320,7 +348,7 @@ const ProductForm = ({ initial, onSave, onClose, saving, existingSlugs }) => {
           {/* Gallery Images — dynamic, infinite */}
           <div>
             <p className="text-xs font-heading font-semibold text-white/50 uppercase tracking-wider mb-3">
-              Gallery Images <span className="text-white/20 normal-case font-normal">(fill last field to add more)</span>
+              Gallery Images <span className="text-white/20 normal-case font-normal">(single ya multiple select kar sakte ho)</span>
             </p>
             <div className="flex flex-col gap-3">
               {form.images.map((img, i) => (
@@ -330,6 +358,16 @@ const ProductForm = ({ initial, onSave, onClose, saving, existingSlugs }) => {
                       label={`Image ${i + 1}${i === form.images.length - 1 ? ' (fill to add more)' : ''}`}
                       value={img}
                       onChange={(v) => setImage(i, v)}
+                      onMultipleUpload={(urls) => {
+                        setForm((f) => {
+                          const arr = [...f.images]
+                          // current slot replace karo first url se, baaki append karo
+                          arr.splice(i, 1, ...urls)
+                          const cleaned = arr.filter((v) => v.trim() !== '')
+                          cleaned.push('')
+                          return { ...f, images: cleaned }
+                        })
+                      }}
                     />
                   </div>
                   {form.images.length > 1 && (

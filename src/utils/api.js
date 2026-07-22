@@ -52,6 +52,16 @@ export const uploadImage = (file) => {
   }).then((r) => r.json())
 }
 
+export const uploadImages = (files) => {
+  const fd = new FormData()
+  Array.from(files).forEach((f) => fd.append('images', f))
+  return fetch(`${BASE}/upload/multiple`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: fd,
+  }).then((r) => r.json())
+}
+
 export const sendContactMessage = (data) =>
   fetch(`${BASE}/contact`, {
     method: 'POST',
