@@ -506,22 +506,25 @@ const Admin = () => {
       <div className="min-h-screen bg-[#111] text-white">
 
         {/* Top bar */}
-        <div className="bg-[#1a1a1a] border-b border-white/10 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BrandIcon sizeClassName="w-9 h-9" />
-            <div>
-              <p className="font-heading font-black text-white text-base uppercase tracking-tight leading-none">{SITE_NAME}</p>
+        <div className="bg-[#1a1a1a] border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <BrandIcon sizeClassName="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="font-heading font-black text-white text-sm sm:text-base uppercase tracking-tight leading-none truncate">{SITE_NAME}</p>
               <p className="text-white/30 text-[10px] font-heading uppercase tracking-widest mt-0.5">Admin Panel</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => { setEditing(null); setShowForm(true) }}
-              className="flex items-center gap-2 bg-[#F4B400] hover:bg-[#e0a500] text-[#111] font-heading font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-colors">
-              <Plus size={15} /> Add Product
+              className="flex items-center gap-1.5 bg-[#F4B400] hover:bg-[#e0a500] text-[#111] font-heading font-black text-xs uppercase tracking-wider px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-colors">
+              <Plus size={14} />
+              <span className="hidden sm:inline">Add Product</span>
+              <span className="sm:hidden">Add</span>
             </button>
             <button onClick={handleLogout}
-              className="flex items-center gap-2 border border-white/10 text-white/50 hover:text-white hover:border-white/30 font-heading font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors">
-              <LogOut size={14} /> Logout
+              className="flex items-center gap-1.5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 font-heading font-semibold text-xs px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-colors">
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
         </div>
