@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, FileText, MapPin, Do
 import Container from '@/components/Container'
 import { getProductById, getProducts } from '@/utils/api'
 import { getProductSlug } from '@/utils/searchUtils'
+import { API_BASE_URL } from '@/config/appConfig'
 import jsPDF from 'jspdf'
 
 /* ── Accordion row ── */
@@ -86,7 +87,7 @@ const ProductDetail = () => {
     if (!product) return
     setDownloading(true)
     try {
-      const PROXY = 'http://localhost:5000/api/proxy-image?url='
+      const PROXY = `${API_BASE_URL}/proxy-image?url=`
 
       // Fetch image → base64 via proxy
       const fetchB64 = async (url) => {
